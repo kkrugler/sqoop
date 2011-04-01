@@ -71,7 +71,7 @@ public class NamedFifo {
     String modeStr = Integer.toString(permissions, 8);
 
     // Create the FIFO itself.
-    Shell.execCommand("mknod", "--mode=0" + modeStr, filename, "p");
+    Shell.execCommand("mkfifo", "-m", "0" + modeStr, filename);
 
     // Schedule the FIFO to be cleaned up when we exit.
     this.fifoFile.deleteOnExit();
