@@ -19,7 +19,9 @@
 package com.cloudera.sqoop.manager;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
+import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -31,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,6 +44,7 @@ import com.cloudera.sqoop.mapreduce.OracleExportOutputFormat;
 import com.cloudera.sqoop.mapreduce.db.OracleDataDrivenDBInputFormat;
 import com.cloudera.sqoop.util.ExportException;
 import com.cloudera.sqoop.util.ImportException;
+import com.cloudera.sqoop.util.JdbcUrl;
 
 /**
  * Manages connections to Oracle databases.
@@ -267,14 +271,12 @@ public class OracleManager extends GenericJdbcManager {
     connection = CACHE.getConnection(connectStr, username);
     if (null == connection) {
       // Couldn't pull one from the cache. Get a new one.
+      
+      String jdbcUrl = JdbcUrl.getConnectionUrl(connectStr);
       LOG.debug("Creating a new connection for "
-          + connectStr + "/" + username);
-      if (null == username) {
-        connection = DriverManager.getConnection(connectStr);
-      } else {
-        connection = DriverManager.getConnection(connectStr, username,
-            password);
-      }
+          + jdbcUrl + "/" + username);
+      Properties props = JdbcUrl.getConnectionProperties(connectStr, username, password);
+      connection = DriverManager.getConnection(jdbcUrl, props);
     }
 
     // We only use this for metadata queries. Loosest semantics are okay.
@@ -286,7 +288,8 @@ public class OracleManager extends GenericJdbcManager {
     return connection;
   }
 
-  /**
+
+/**
    * Set session time zone.
    * @param conn      Connection object
    * @throws          SQLException instance

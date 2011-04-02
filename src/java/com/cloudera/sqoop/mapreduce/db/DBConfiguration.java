@@ -21,11 +21,13 @@ package com.cloudera.sqoop.mapreduce.db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.lib.db.DBWritable;
 
 import com.cloudera.sqoop.mapreduce.db.DBInputFormat.NullDBWritable;
+import com.cloudera.sqoop.util.JdbcUrl;
 
 /**
  * A container for configuration property names for jobs with DB input/output.
@@ -177,15 +179,12 @@ public class DBConfiguration {
 
     Class.forName(conf.get(DBConfiguration.DRIVER_CLASS_PROPERTY));
 
-    if(conf.get(DBConfiguration.USERNAME_PROPERTY) == null) {
-      return DriverManager.getConnection(
-               conf.get(DBConfiguration.URL_PROPERTY));
-    } else {
-      return DriverManager.getConnection(
-          conf.get(DBConfiguration.URL_PROPERTY),
-          conf.get(DBConfiguration.USERNAME_PROPERTY),
-          conf.get(DBConfiguration.PASSWORD_PROPERTY));
-    }
+    String connectString = conf.get(DBConfiguration.URL_PROPERTY);
+    Properties connectProps = JdbcUrl.getConnectionProperties(connectString,
+        conf.get(DBConfiguration.USERNAME_PROPERTY), 
+        conf.get(DBConfiguration.PASSWORD_PROPERTY));
+    return DriverManager.getConnection(JdbcUrl.getConnectionUrl(connectString),
+        connectProps);
   }
 
   public Configuration getConf() {

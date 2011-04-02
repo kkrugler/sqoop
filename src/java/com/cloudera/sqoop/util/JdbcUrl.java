@@ -18,8 +18,11 @@
 
 package com.cloudera.sqoop.util;
 
+import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -120,5 +123,69 @@ public final class JdbcUrl {
           + "; reason is " + mue.toString());
       return -1;
     }
+  }
+  
+  public static String getConnectionUrl(String connectString) {
+    try {
+      URL connectUrl = makeUrlFromJdbcString(connectString);
+      String queryStr = connectUrl.getQuery();
+      if (null != queryStr) {
+        return connectString.substring(0, connectString.length() - queryStr.length() - 1);
+      } else {
+        return connectString;
+      }
+    } catch (MalformedURLException mue) {
+      LOG.error("Malformed connect string URL: " + connectString
+          + "; reason is " + mue.toString());
+      return connectString;
+    }
+  }
+  
+  public static Properties getConnectionProperties(String connectString, String username, String password) {
+    Properties props = new Properties();
+
+    // Add any query parameters as properties.
+    try {
+      URL connectUrl = makeUrlFromJdbcString(connectString);
+      String queryStr = connectUrl.getQuery();
+      if (null != queryStr) {
+        String [] params = queryStr.split("&");
+        for (String param : params) {
+          String [] keyValue = param.split("=");
+          try {
+            String key = URLDecoder.decode(keyValue[0], "UTF-8");
+            String value = keyValue.length == 1 ? "" : URLDecoder.decode(keyValue[1], "UTF-8");
+            props.put(key, value);
+          } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("Impossible exception", e);
+          }
+        }
+      }
+    } catch (MalformedURLException mue) {
+      LOG.error("Malformed connect string URL: " + connectString
+          + "; reason is " + mue.toString());
+    }
+
+    // Add username and password.
+    if (null != username) {
+      props.put("user", username);
+      props.put("password", password);
+    }
+
+    return props;
+  }
+  
+  private static URL makeUrlFromJdbcString(String connectString) throws MalformedURLException {
+    String sanitizedString = null;
+    int schemeEndOffset = connectString.indexOf("jdbc:");
+    if (-1 == schemeEndOffset) {
+      // Couldn't find one? ok, then there's no problem, it should work as a
+      // URL.
+      sanitizedString = connectString;
+    } else {
+      sanitizedString = "http://" + connectString.substring(schemeEndOffset + 5);
+    }
+
+    return new URL(sanitizedString);
   }
 }
