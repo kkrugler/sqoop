@@ -28,10 +28,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 /**
- * Some utilities for parsing JDBC URLs which may not be tolerated
- * by Java's java.net.URL class.
- * java.net.URL does not support multi:part:scheme:// components, which
- * virtually all JDBC connect string URLs have.
+ * Some utilities for parsing JDBC URLs which may not be tolerated by Java's
+ * java.net.URL class. java.net.URL does not support multi:part:scheme://
+ * components, which virtually all JDBC connect string URLs have.
  */
 public final class JdbcUrl {
 
@@ -42,7 +41,7 @@ public final class JdbcUrl {
 
   /**
    * @return the database name from the connect string, which is typically the
-   * 'path' component, or null if we can't.
+   *         'path' component, or null if we can't.
    */
   public static String getDatabaseName(String connectString) {
     try {
@@ -124,13 +123,14 @@ public final class JdbcUrl {
       return -1;
     }
   }
-  
+
   public static String getConnectionUrl(String connectString) {
     try {
       URL connectUrl = makeUrlFromJdbcString(connectString);
       String queryStr = connectUrl.getQuery();
       if (null != queryStr) {
-        return connectString.substring(0, connectString.length() - queryStr.length() - 1);
+        return connectString.substring(0,
+            connectString.length() - queryStr.length() - 1);
       } else {
         return connectString;
       }
@@ -140,8 +140,9 @@ public final class JdbcUrl {
       return connectString;
     }
   }
-  
-  public static Properties getConnectionProperties(String connectString, String username, String password) {
+
+  public static Properties getConnectionProperties(String connectString,
+      String username, String password) {
     Properties props = new Properties();
 
     // Add any query parameters as properties.
@@ -149,12 +150,13 @@ public final class JdbcUrl {
       URL connectUrl = makeUrlFromJdbcString(connectString);
       String queryStr = connectUrl.getQuery();
       if (null != queryStr) {
-        String [] params = queryStr.split("&");
+        String[] params = queryStr.split("&");
         for (String param : params) {
-          String [] keyValue = param.split("=");
+          String[] keyValue = param.split("=");
           try {
             String key = URLDecoder.decode(keyValue[0], "UTF-8");
-            String value = keyValue.length == 1 ? "" : URLDecoder.decode(keyValue[1], "UTF-8");
+            String value = keyValue.length == 1 ? "" : URLDecoder.decode(
+                keyValue[1], "UTF-8");
             props.put(key, value);
           } catch (UnsupportedEncodingException e) {
             throw new RuntimeException("Impossible exception", e);
@@ -174,16 +176,25 @@ public final class JdbcUrl {
 
     return props;
   }
-  
-  private static URL makeUrlFromJdbcString(String connectString) throws MalformedURLException {
+
+  /**
+   * Convert a JDBC-compliant connection string into a URL that we can use to
+   * extract pieces of the connection (hostname, port, query, etc)
+   * 
+   * @param connectStr
+   * @return URL-equivalent
+   * @throws MalformedURLException
+   */
+  public static URL makeUrlFromJdbcString(String connectStr)
+      throws MalformedURLException {
     String sanitizedString = null;
-    int schemeEndOffset = connectString.indexOf("jdbc:");
-    if (-1 == schemeEndOffset) {
-      // Couldn't find one? ok, then there's no problem, it should work as a
-      // URL.
-      sanitizedString = connectString;
+    if (connectStr.startsWith("jdbc:")) {
+      sanitizedString = "http://" + connectStr.substring("jdbc:".length());
+    } else if (connectStr.startsWith("http://")
+        || connectStr.startsWith("https://")) {
+      sanitizedString = connectStr;
     } else {
-      sanitizedString = "http://" + connectString.substring(schemeEndOffset + 5);
+      sanitizedString = "http://" + connectStr;
     }
 
     return new URL(sanitizedString);
