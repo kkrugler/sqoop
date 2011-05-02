@@ -349,9 +349,9 @@
     </exec>
   </target>
 
-  <target name="package"
-      depends="jar-all,compile-all,docs,ivy-retrieve-redist,scripts"
-      description="Create a redistributable package">
+  <target name="package-base"
+      depends="jar-all,compile-all,ivy-retrieve-redist,scripts"
+      description="Create a redistributable package, but without docs">
 
     <mkdir dir="${dist.dir}"/>
 
@@ -399,20 +399,6 @@
       </fileset>
     </copy>
 
-    <!-- copy in documentation build artifacts -->
-    <copy todir="${dist.dir}/docs" includeEmptyDirs="false" flatten="false">
-      <fileset dir="${build.dir}/docs">
-        <include name="**/*.html" />
-        <include name="**/*.css" />
-        <include name="images/**" />
-      </fileset>
-    </copy>
-    <copy todir="${dist.dir}/docs/man" includeEmptyDirs="false" flatten="false">
-      <fileset dir="${build.dir}/docs">
-        <include name="**/*.gz" />
-      </fileset>
-    </copy>
-
     <!-- copy in auto-generated bin scripts -->
     <copy todir="${dist.dir}/bin" includeEmptyDirs="false" flatten="true">
       <fileset dir="${build.bin.dir}">
@@ -439,6 +425,27 @@
     <copy file="${dist.dir}/conf/sqoop-site-template.xml"
         tofile="${dist.dir}/conf/sqoop-site.xml"
         overwrite="true" />
+  </target>
+
+
+  <target name="package"
+      depends="package-base,docs"
+      description="Create a redistributable package">
+
+    <!-- copy in documentation build artifacts -->
+    <copy todir="${dist.dir}/docs" includeEmptyDirs="false" flatten="false">
+      <fileset dir="${build.dir}/docs">
+        <include name="**/*.html" />
+        <include name="**/*.css" />
+        <include name="images/**" />
+      </fileset>
+    </copy>
+    <copy todir="${dist.dir}/docs/man" includeEmptyDirs="false" flatten="false">
+      <fileset dir="${build.dir}/docs">
+        <include name="**/*.gz" />
+      </fileset>
+    </copy>
+
   </target>
 
   <target name="tar" depends="package" description="Create release tarball">
